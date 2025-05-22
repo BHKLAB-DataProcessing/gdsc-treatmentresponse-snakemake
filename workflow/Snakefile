@@ -16,8 +16,8 @@ rule all:
         # profiles = expand(dmpdirs.RAWDATA / "treatmentResponse" / "{version}_fitted_dose_response.xlsx", version=['GDSC1', 'GDSC2']),
         tre = expand(
             dmpdirs.RESULTS / "GDSC{version}_treatmentResponseExperiment.RDS", 
-            # version=['GDSC1', 'GDSC2']
-            version=['GDSC1']
+            version=['GDSC1', 'GDSC2']
+            # version=['GDSC1']
         ),
 
 rule download_treatmentResponse:
@@ -63,8 +63,8 @@ rule preprocessTreatmentResponse:
         preprocessed_profiles = dmpdirs.PROCDATA / "preprocessed_treatmentResponse_{version}_profiles.csv",
     log:
         dmpdirs.LOGS / "treatmentResponse/{version}/preprocessTreatmentResponse.log"
-    container:
-        CONTAINER
+    conda:
+        "envs/treatmentResponse.yaml"
     script:
         dmpdirs.SCRIPTS / "R" / "preprocessTreatmentResponse.R"
 
@@ -77,10 +77,10 @@ rule buildTreatmentResponseExperiment:
         tre = dmpdirs.RESULTS / "GDSC{version}_treatmentResponseExperiment.RDS",
     log:
         dmpdirs.LOGS / "treatmentResponse/{version}/buildTreatmentResponseExperiment.log"
-    container:
-        CONTAINER
+    conda:
+        "envs/treatmentResponse.yaml"
     threads:
-        30
+        10
     script:
         dmpdirs.SCRIPTS / "R" / "buildTreatmentResponseExperiment.R"
 
@@ -93,7 +93,7 @@ rule preprocessMetadata:
         treatmentMetadata = dmpdirs.METADATA / "treatmentMetadata.tsv",
     log:
         dmpdirs.LOGS / "treatmentResponse/preprocessMetadata.log"
-    container:
-        "docker://bhklab/annotationgx-r:0.0.0.9097"
+    conda:
+        "envs/treatmentResponse.yaml"
     script:
         dmpdirs.SCRIPTS / "R" / "preprocessMetadata.R"

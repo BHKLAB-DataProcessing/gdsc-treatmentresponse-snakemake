@@ -36,9 +36,10 @@ damply = ">=0.10.0, <0.11"
 [feature.snakemake.dependencies]
 snakemake = "*"
 snakemake-storage-plugin-http = "*"
+conda = ">=25.3.1,<26"
 
 [feature.snakemake.tasks]
-pipeline = { cmd = "snakemake --cores all --use-apptainer", description = "Run snakemake pipeline" }
+pipeline = { cmd = "snakemake --cores all --use-apptainer --use-conda", description = "Run snakemake pipeline" }
 
 
 ############################################## QUALITY ###############################################

@@ -24,7 +24,8 @@ jobs:
             - name: Run PharmacoSet Pipeline
               uses: ./.github/actions/run-pipeline
               with:
-                  artifact-name: gCSI-TreatmentResponseExperiment
-                  result-path: data/results/gCSI_treatmentResponseExperiment.RDS
+                  artifact-name: GDSC-TreatmentResponseExperiment
+                  result-path: data/results/**/*.RDS
                   dryrun: true
 
+                  

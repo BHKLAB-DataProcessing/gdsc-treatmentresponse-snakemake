@@ -1,0 +1,15 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base=4.3.2
+  - r-essentials=4.3.0
+  - r-data.table=1.14.8
+  - r-qs=0.25
+  - r-log4r=0.4.3
+  - r-devtools=2.4.5
+  - r-pak=0.7.1
+  - bioconductor-biocparallel=1.36.0
+  - bioconductor-genomicranges=1.54.1
+  - bioconductor-coregx=2.6.0
+  - bioconductor-pharmacogx=3.6.0

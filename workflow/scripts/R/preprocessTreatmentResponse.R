@@ -18,10 +18,10 @@ if (exists("snakemake")) {
         )
     }
 
-    # Assuming that this script is named after the rule
-    # Saves the workspace to "resources/"preprocessTreatmentResponse"
-    file.path("resources", paste0(snakemake@rule, ".RData")) |>
-        save.image()
+    # # Assuming that this script is named after the rule
+    # # Saves the workspace to "resources/"preprocessTreatmentResponse"
+    # file.path("resources", paste0(snakemake@rule, ".RData")) |>
+    #     save.image()
 } else {
     # If the snakemake object does not exist, load the workspace
     file.path("resources", "preprocessTreatmentResponse.RData") |>
@@ -29,13 +29,14 @@ if (exists("snakemake")) {
 }
 
 snakemake@source("utils.R")
+library(data.table)
 ###############################################################################
 # Load INPUT
 ###############################################################################
-rawdata <- fread(INPUT$rawdata)
-processed <- as.data.table(readxl::read_xlsx(INPUT$profiles))
-treatmentMetadata <- fread(INPUT$treatmentMetadata)
-sampleMetadata <- fread(INPUT$sampleMetadata)
+rawdata <- data.table::fread(INPUT$rawdata)
+processed <- data.table::as.data.table(readxl::read_xlsx(INPUT$profiles))
+treatmentMetadata <- data.table::fread(INPUT$treatmentMetadata)
+sampleMetadata <- data.table::fread(INPUT$sampleMetadata)
 
 
 # 2.0 Subset data
@@ -56,10 +57,6 @@ rawdata_st <- merge(
     all.x = TRUE
 )
 
-# rawdata_s <- rawdata[, GDSC.sampleid := ..sampleMetadata[match(SANGER_MODEL_ID, CMP.model_id), GDSC.sampleid]]
-
-# rawdata_st <- rawdata_s[, GDSC.treatmentid := ..treatmentMetadata[match(DRUG_ID, GDSC.DRUG_ID), GDSC.treatmentid]]
-
 subsetted_rawdata <- rawdata_st[(!is.na(DRUG_ID) & !is.na(GDSC.treatmentid)) | grepl("^(L|R|A|N|B)", TAG)]
 
 # drop duplicate rows
@@ -75,10 +72,6 @@ subsetted_rawdata
 # we will normalize the rawdata using the gdscIC50 package
 # neg_control_TAGS <- subsetted_rawdata[grepl("^NC", TAG), unique(TAG)]
 neg_control_tag <- ifelse(WILDCARDS$version == "GDSC1", "NC-0", "NC-1")
-if (!require("gdscIC50", quietly = TRUE)) {
-    pak::pkg_install("cancerrxgene/gdscIC50")
-}
-
 
 subsetted_rawdata <- gdscIC50::removeFailedDrugs(subsetted_rawdata)
 
@@ -90,6 +83,7 @@ normData <- gdscIC50::normalizeData(subsetted_rawdata, trim = TRUE, neg_control 
 # the normalization removes the treatmentid and sampleid columns
 normData <- merge(normData, unique(subsetted_rawdata[, .(MASTER_CELL_ID, GDSC.sampleid)]), by = "MASTER_CELL_ID", all.x = T)
 normData <- merge(normData, unique(subsetted_rawdata[, .(DRUG_ID, GDSC.treatmentid)]), by.x = "DRUG_ID_lib", by.y = "DRUG_ID", all.x = T)
+normData <- merge(normData, treatmentMetadata, by.x = c("GDSC.treatmentid","DRUG_ID_lib"), by.y = c("GDSC.treatmentid","GDSC.DRUG_ID"), all.x = T)
 
 # remove anything with empty GDSC.sampleid, then rename CONC to Dose and normalized_intensity to Viability
 x_assay <- normData[!is.na(GDSC.sampleid), ] |>
@@ -99,7 +93,7 @@ x_assay <- normData[!is.na(GDSC.sampleid), ] |>
     )
 
 print(paste0("Merging treatmentMetadata with processed data"))
-procData <- merge(processed, treatmentMetadata[, .(GDSC.DRUG_ID, GDSC.treatmentid)], by.x = "DRUG_ID", by.y = "GDSC.DRUG_ID", all.x = T)
+procData <- merge(processed, treatmentMetadata, by.x = "DRUG_ID", by.y = "GDSC.DRUG_ID", all.x = T)
 procData <- procData[, GDSC.sampleid := cleanCharacterStrings(CELL_LINE_NAME)][!is.na(GDSC.sampleid) & GDSC.sampleid %in% sampleMetadata$GDSC.sampleid]
 
 
@@ -112,18 +106,115 @@ subset_normData <- unique(x_assay[
         !is.na(Dose) &
         !is.na(GDSC.sampleid)
 ])
-
+subset_normData
 # CoreGx Functions require that the main terminology is "treatmentid" and "sampleid"
 # we will add these columns to the subset_normData
-subset_normData[, "treatmentid" := GDSC.treatmentid]
-subset_normData[, "sampleid" := GDSC.sampleid]
 
-unique_treatments <- unique(subset_normData$GDSC.treatmentid)
-unique_samples <- unique(subset_normData$GDSC.sampleid)
+# rename the columns to match the CoreGx terminology
+data.table::setnames(
+    subset_normData,
+    old = c("GDSC.treatmentid", "GDSC.sampleid"),
+    new = c("treatmentid", "sampleid")
+)
+
+unique_treatments <- unique(subset_normData$treatmentid)
+unique_samples <- unique(subset_normData$sampleid)
 print(paste0("Number of unique treatments: ", length(unique_treatments)))
 print(paste0("Number of unique samples: ", length(unique_samples)))
 
+pre_raw <- OUTPUT$preprocessed_raw
+pre_profiles <- OUTPUT$preprocessed_profiles
 
-###############################################################################
-# Save OUTPUT
-###############################################################################
+# ###############################################################################
+# # # Save OUTPUT
+# ###############################################################################
+message("Saving the preprocessed raw data...")
+data.table::fwrite(
+    subset_normData,
+    file = pre_raw,
+    sep = "\t",
+    row.names = FALSE,
+    col.names = TRUE,
+    quote = FALSE
+)
+message("Saving the preprocessed profiles data...")
+data.table::fwrite(
+    procData,
+    file = pre_profiles,
+    sep = "\t",
+    row.names = FALSE,
+    col.names = TRUE,
+    quote = FALSE
+)
+
+# # TRE
+# raw_dt <- subset_normData
+# message(paste0("Loading TREDataMapper"))
+# # subset raw_dt to only the first 100 sampleids
+
+# treDataMapper <- CoreGx::TREDataMapper(rawdata = raw_dt)
+
+# # > names(raw_dt)
+# #  [1] "DRUG_ID_lib"      "MASTER_CELL_ID"   "SCAN_ID"          "BARCODE"
+# #  [5] "RESEARCH_PROJECT" "DATE_CREATED"     "DRUGSET_ID"       "CELL_LINE_NAME"
+# #  [9] "CELL_ID"          "COSMIC_ID"        "POSITION"         "Dose"
+# # [13] "INTENSITY"        "lib_drug"         "DoseNumber"       "treatment"
+# # [17] "NC"               "PC"               "Viability"        "norm_neg_pos"
+# # [21] "time_stamp"       "sw_version"       "GDSC.sampleid"    "GDSC.treatmentid"
+# # [25] "treatmentid"      "sampleid"
+# # >
+
+# # We need to define which columns identify the drug
+# # and which columns identify the sample
+# groups <- list(
+#     drugs_doses2 = c("treatmentid", "Dose", "lib_drug"),
+#     sample_ids = c("sampleid", "BARCODE"),
+#     assay2 = c("treatmentid", "Dose", "lib_drug", "sampleid", "BARCODE")
+# )
+
+# # subset out mapped?
+
+# subsets <- c(TRUE)
+
+# guess <- CoreGx::guessMapping(
+#     treDataMapper,
+#     groups = groups,
+#     subset = subsets
+# )
+
+# CoreGx::rowDataMap(treDataMapper) <- list(
+#     id_columns = guess$drugs_doses2$id_columns,
+#     mapped_columns = guess$drugs_doses2$mapped_columns
+# )
+
+# CoreGx::colDataMap(treDataMapper) <- list(
+#     id_columns = guess$sample_ids$id_columns,
+#     mapped_columns = guess$sample_ids$mapped_columns
+# )
+
+# CoreGx::assayMap(treDataMapper) <- list(
+#     sensitivity = list(
+#         id_columns = guess$assay2$id_columns,
+#         mapped_columns = guess$assay2$mapped_columns
+#     )
+# )
+
+# show(treDataMapper)
+
+# message("Running CoreGx::metaConstruct")
+# tre <- CoreGx::metaConstruct(treDataMapper)
+# CoreGx::metadata(tre) <- list(
+#     data_source = snakemake@config$treatmentResponse,
+#     annotation = "treatmentResponse",
+#     date = Sys.Date(),
+#     sessionInfo = capture.output(sessionInfo())
+# )
+# show(tre)
+# ###############################################################################
+# # Save OUTPUT
+# ###############################################################################
+# message("Saving the treatment response experiment object...")
+# saveRDS(
+#     tre_fit,
+#     file = OUTPUT$tre
+# )
