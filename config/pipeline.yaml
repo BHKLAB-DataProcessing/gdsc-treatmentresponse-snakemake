@@ -1,0 +1,31 @@
+name: DATASET_NAME                  # Name of the dataset, i.e GDSC, CCLE, CTRP, NCI60
+description: The Genomics of Drug Sensitivity in Cancer (GDSC) is ...
+  This dataset contains molecular profiles for 1,000 cancer cell lines, 
+  and drug sensitivity data against a wide range of anti-cancer therapeutics.
+url: https://www.cancerrxgene.org/
+
+metadata:
+    sampleMetadata: 
+      description:
+      url: https://cog.sanger.ac.uk/cancerrxgene/GDSC_release8.5/Cell_Lines_Details.xlsx
+    treatmentMetadata:
+      description:
+      url: https://cog.sanger.ac.uk/cancerrxgene/GDSC_release8.5/screened_compounds_rel_8.5.csv
+
+# Configure Data URLs
+treatmentResponse:
+    date: 27Oct23
+    GDSC1:
+        rawdata:
+            description: The raw data for the GDSC1 release 8.5 is available from the GDSC website.
+            url: https://cog.sanger.ac.uk/cancerrxgene/GDSC_release8.5/GDSC1_public_raw_data_27Oct23.csv
+        profiles:
+            description: The processed data for the GDSC1 release 8.5 is available from the GDSC website.
+            url: https://cog.sanger.ac.uk/cancerrxgene/GDSC_release8.5/GDSC1_fitted_dose_response_27Oct23.xlsx
+    GDSC2:
+        rawdata:
+            description: The raw data for the GDSC2 release 8.5 is available from the GDSC website.
+            url: https://cog.sanger.ac.uk/cancerrxgene/GDSC_release8.5/GDSC2_public_raw_data_27Oct23.csv
+        profiles:
+            description: The processed data for the GDSC2 release 8.5 is available from the GDSC website.
+            url: https://cog.sanger.ac.uk/cancerrxgene/GDSC_release8.5/GDSC2_fitted_dose_response_27Oct23.xlsx

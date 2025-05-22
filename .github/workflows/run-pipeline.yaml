@@ -1,0 +1,30 @@
+name: Dry Run Pipeline to Make Sure It Works
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+    workflow_dispatch:
+
+permissions:
+    contents: write
+
+jobs:
+    Dry-Run-Pipeline:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Run PharmacoSet Pipeline
+              uses: ./.github/actions/run-pipeline
+              with:
+                  artifact-name: gCSI-TreatmentResponseExperiment
+                  result-path: data/results/gCSI_treatmentResponseExperiment.RDS
+                  dryrun: true
+

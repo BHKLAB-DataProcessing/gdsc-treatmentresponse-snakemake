@@ -1,0 +1,80 @@
+name: "Run PharmacoSet Pipeline"
+description: "Sets up environment and runs a PharmacoSet pipeline using Snakemake and Pixi"
+inputs:
+    artifact-name:
+        description: "Name of the artifact to upload"
+        required: true
+    result-path:
+        description: "Path to the result file to upload as artifact and release asset"
+        required: true
+    release-tag:
+        description: "The release tag to use for the GitHub release. If provided, will always create a release"
+        required: false
+    pixi-version:
+        description: "Version of Pixi to use"
+        required: false
+        default: "v0.47.0"
+    apptainer-version:
+        description: "Version of Apptainer to use"
+        required: false
+        default: "1.3.6"
+    dryrun:
+        description: "Whether to run the pipeline in dry-run mode"
+        required: false
+        default: "false"
+
+runs:
+    using: "composite"
+    steps:
+        - uses: eWaterCycle/setup-apptainer@v2
+          with:
+              apptainer-version: ${{ inputs.apptainer-version }}
+
+        # See https://github.com/apptainer/apptainer/pull/2262
+        - name: Disable apparmor namespace restrictions for apptainer (os='Linux')
+          if: runner.os == 'Linux'
+          shell: bash
+          run: |
+              sudo sh -c 'echo kernel.apparmor_restrict_unprivileged_userns=0 \
+                  >/etc/sysctl.d/90-disable-userns-restrictions.conf'
+              sudo sysctl -p /etc/sysctl.d/90-disable-userns-restrictions.conf
+
+        - name: Install Pixi
+          uses: prefix-dev/setup-pixi@v0.8.8
+          with:
+              environments: "default"
+              pixi-version: ${{ inputs.pixi-version }}
+              cache: true
+              locked: true
+              activate-environment: true
+
+        - name: Run Snakemake Pipeline
+          shell: bash
+          run: pixi run pipeline ${{ inputs.dryrun == 'true' && '--dry-run' || '' }}
+
+        - name: Upload assets as workflow artifact
+          uses: actions/upload-artifact@v4
+          with:
+              name: ${{ inputs.artifact-name }}
+              path: ${{ inputs.result-path }}
+
+        - name: Upload to GitHub Release (tag based)
+          if: ${{ !inputs.release-tag && startsWith(github.ref, 'refs/tags/') }}
+          uses: softprops/action-gh-release@v2
+          with:
+              files: ${{ inputs.result-path }}
+              draft: false
+              prerelease: false
+              generate_release_notes: false
+              append_body: true
+
+        - name: Upload to GitHub Release (explicit release)
+          if: ${{ inputs.release-tag != '' }}
+          uses: softprops/action-gh-release@v2
+          with:
+              files: ${{ inputs.result-path }}
+              tag_name: ${{ inputs.release-tag }}
+              draft: false
+              prerelease: false
+              generate_release_notes: false
+              append_body: true
