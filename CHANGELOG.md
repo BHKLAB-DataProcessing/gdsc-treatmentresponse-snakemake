@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/BHKLAB-DataProcessing/gdsc-treatmentresponse-snakemake/compare/v0.2.0...v0.2.1) (2025-05-23)
+
+
+### Bug Fixes
+
+* remove extra prefix in rds file ([dc165a1](https://github.com/BHKLAB-DataProcessing/gdsc-treatmentresponse-snakemake/commit/dc165a1a9e587a4c1c92640614176fbd65a22225))
+
 ## [0.2.0](https://github.com/BHKLAB-DataProcessing/gdsc-treatmentresponse-snakemake/compare/v0.1.0...v0.2.0) (2025-05-23)
 
 
