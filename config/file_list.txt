@@ -1,0 +1,8 @@
+https://gdsc-combinations.depmap.sanger.ac.uk/downloads/gdsc-007/matrix_results
+https://gdsc-combinations.depmap.sanger.ac.uk/downloads/gdsc-008/matrix_results
+https://gdsc-combinations.depmap.sanger.ac.uk/downloads/gdsc-009/matrix_results
+https://gdsc-combinations.depmap.sanger.ac.uk/downloads/gdsc-010/matrix_results
+https://gdsc-combinations.depmap.sanger.ac.uk/downloads/sandpiper-01/matrix_results
+https://gdsc-combinations.depmap.sanger.ac.uk/downloads/breast/anchor_combo
+https://gdsc-combinations.depmap.sanger.ac.uk/downloads/colon/anchor_combo
+https://gdsc-combinations.depmap.sanger.ac.uk/downloads/pancreas/anchor_combo

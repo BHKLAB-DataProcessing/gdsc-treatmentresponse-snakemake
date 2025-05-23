@@ -1,4 +1,10 @@
 from damply import dirs as dmpdirs
+from pathlib import Path
+from rich import print
+import dpath
+import requests
+
+from tqdm import tqdm
 
 configfile: "config/pipeline.yaml"
 
@@ -8,27 +14,79 @@ CONTAINER = 'docker://bhklab/pharmacogx:3.13.2'
 storage:
     provider="http"
 
-treatmentResponse = config["treatmentResponse"]
 
 rule all:
     input:
-        # raws = expand(dmpdirs.RAWDATA / "treatmentResponse" / "{version}_public_raw_data.csv", version=['GDSC1', 'GDSC2']),
-        # profiles = expand(dmpdirs.RAWDATA / "treatmentResponse" / "{version}_fitted_dose_response.xlsx", version=['GDSC1', 'GDSC2']),
         tre = expand(
             dmpdirs.RESULTS / "{version}_treatmentResponseExperiment.RDS", 
             version=['GDSC1', 'GDSC2']
-            # version=['GDSC1']
         ),
+
+################################################################################
+# DOWNLOAD RULES
+################################################################################
+rule collect_gdscSquared:
+    input:
+        all_pubs = collect(
+            dmpdirs.RAWDATA / "GDSC-Squared" / "treatmentResponse" / "{pub}",
+            pub = ['matrix', 'anchor', 'original_screen']
+        )
+
+# this is super hacky unfortunately
+rule downloadTreatmentResponse_gdscSquared:
+    params:
+        mapping = lookup(
+            dpath="{pub}/files",
+            within=config["treatmentResponse"]["GDSC-squared"],
+        ),
+    output:
+        pubdir = directory(dmpdirs.RAWDATA / "GDSC-Squared" / "treatmentResponse" / "{pub}" )
+    run:
+        from rich import print
+        import shutil
+        outputPath = Path(output.pubdir)
+        outputPath.mkdir(parents=True, exist_ok=True)
+        def download(url: str, fname: str):
+            resp = requests.get(url, stream=True)
+            total = int(resp.headers.get('content-length', 0))
+            with open(fname, 'wb') as file, tqdm(
+                desc=str(fname.stem),
+                total=total,
+                unit='iB',
+                unit_scale=True,
+                unit_divisor=1024,
+            ) as pbar:
+                for data in resp.iter_content(chunk_size=1024):
+                    size = file.write(data)
+                    pbar.update(size)
+        for pair in params.mapping:
+            url = pair["url"]
+            filename = pair["filename"]
+            download(url, outputPath / filename)
+            # extract depending on gxip or zip
+            if filename.endswith(".zip"):
+                shutil.unpack_archive(outputPath / filename, outputPath)
+            elif filename.endswith("gz"):
+                import gzip
+                # extract the gz file
+                with gzip.open(outputPath / filename, 'rb') as f_in:
+                    with open(outputPath / filename[:-3], 'wb') as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+            else:
+                print(f"Unknown file type for {filename}, skipping extraction.")
+            # remove the original file
+            (outputPath / filename).unlink()
+        print(f"Downloaded {url} to {outputPath / filename}")
 
 rule download_treatmentResponse:
     input:
         rawdata = lambda wc: storage.http(treatmentResponse[wc.version]["rawdata"]["url"]),
         profiles = lambda wc: storage.http(treatmentResponse[wc.version]["profiles"]["url"]),
     output:
-        rawdata = dmpdirs.RAWDATA / "treatmentResponse/{version}_public_raw_data.csv",
-        profiles = dmpdirs.RAWDATA / "treatmentResponse/{version}_fitted_dose_response.xlsx",
+        rawdata = dmpdirs.RAWDATA / "{version}" / "treatmentResponse" / "{version}_public_raw_data.csv",
+        profiles = dmpdirs.RAWDATA / "{version}" / "treatmentResponse" / "{version}_fitted_dose_response.xlsx",
     log:
-        dmpdirs.LOGS / "treatmentResponse/{version}/download_treatmentResponse.log"
+        dmpdirs.LOGS / "treatmentResponse" / "{version}/download_treatmentResponse.log"
     shell:
         """
         mv {input.rawdata} {output.rawdata} && \
@@ -43,7 +101,7 @@ rule downloadMetadata:
         sampleMetadata = dmpdirs.METADATA / "raw_sampleMetadata.xlsx",
         treatmentMetadata = dmpdirs.METADATA / "raw_treatmentMetadata.tsv",
     log:
-        dmpdirs.LOGS / "treatmentResponse/downloadMetadata.log"
+        dmpdirs.LOGS / "treatmentResponse" / "downloadMetadata.log"
     shell:
         """
         mkdir -p {dmpdirs.METADATA} && \
@@ -51,36 +109,35 @@ rule downloadMetadata:
         mv {input.treatmentMetadata} {output.treatmentMetadata} > {log} 2>&1
         """
 
+################################################################################
+# PREPROCESSING RULES
+################################################################################
+rule preprocessTreatmentResponse_gdscSquared:
+    input:
+        # idk what original or validation means here
+        original_dir = dmpdirs.RAWDATA / "GDSC-Squared" / "treatmentResponse" / "original_screen",
+    log:
+        dmpdirs.LOGS / "GDSC-Squared" / "treatmentResponse" / "preprocessTreatmentResponse_gdscSquared.log"
+    conda:
+        "envs/treatmentResponse.yaml"
+    script:
+        dmpdirs.SCRIPTS / "R" / "preprocessTreatmentResponse_gdscSquared.R"
 
 rule preprocessTreatmentResponse:
     input:
         sampleMetadata = dmpdirs.METADATA / "sampleMetadata.tsv",
         treatmentMetadata = dmpdirs.METADATA / "treatmentMetadata.tsv",
-        rawdata = dmpdirs.RAWDATA / "treatmentResponse/{version}_public_raw_data.csv",
-        profiles = dmpdirs.RAWDATA / "treatmentResponse/{version}_fitted_dose_response.xlsx",
+        rawdata = dmpdirs.RAWDATA / "{version}" / "treatmentResponse" / "{version}_public_raw_data.csv",
+        profiles = dmpdirs.RAWDATA / "{version}" / "treatmentResponse" / "{version}_fitted_dose_response.xlsx",
     output:
-        preprocessed_raw = dmpdirs.PROCDATA / "preprocessed_treatmentResponse_{version}_raw.csv",
-        preprocessed_profiles = dmpdirs.PROCDATA / "preprocessed_treatmentResponse_{version}_profiles.csv",
+        preprocessed_raw = dmpdirs.PROCDATA/ "{version}"  / "preprocessed_treatmentResponse_{version}_raw.csv",
+        preprocessed_profiles = dmpdirs.PROCDATA/ "{version}"  / "preprocessed_treatmentResponse_{version}_profiles.csv",
     log:
-        dmpdirs.LOGS / "treatmentResponse/{version}/preprocessTreatmentResponse.log"
+        dmpdirs.LOGS/ "{version}"  / "treatmentResponse" / "{version}/preprocessTreatmentResponse.log"
     conda:
         "envs/treatmentResponse.yaml"
     script:
         dmpdirs.SCRIPTS / "R" / "preprocessTreatmentResponse.R"
-
-
-rule buildTreatmentResponseExperiment:
-    input:
-        preprocessed_raw = dmpdirs.PROCDATA / "preprocessed_treatmentResponse_{version}_raw.csv",
-        preprocessed_profiles = dmpdirs.PROCDATA / "preprocessed_treatmentResponse_{version}_profiles.csv",
-    output:
-        tre = dmpdirs.RESULTS / "{version}_treatmentResponseExperiment.RDS",
-    log:
-        dmpdirs.LOGS / "treatmentResponse/{version}/buildTreatmentResponseExperiment.log"
-    conda:
-        "envs/treatmentResponse.yaml"
-    script:
-        dmpdirs.SCRIPTS / "R" / "buildTreatmentResponseExperiment.R"
 
 rule preprocessMetadata:
     input:
@@ -90,8 +147,21 @@ rule preprocessMetadata:
         sampleMetadata = dmpdirs.METADATA / "sampleMetadata.tsv",
         treatmentMetadata = dmpdirs.METADATA / "treatmentMetadata.tsv",
     log:
-        dmpdirs.LOGS / "treatmentResponse/preprocessMetadata.log"
+        dmpdirs.LOGS / "treatmentResponse" / "preprocessMetadata.log"
     conda:
         "envs/treatmentResponse.yaml"
     script:
         dmpdirs.SCRIPTS / "R" / "preprocessMetadata.R"
+
+rule buildTreatmentResponseExperiment:
+    input:
+        preprocessed_raw = dmpdirs.PROCDATA / "preprocessed_treatmentResponse_{version}_raw.csv",
+        preprocessed_profiles = dmpdirs.PROCDATA / "preprocessed_treatmentResponse_{version}_profiles.csv",
+    output:
+        tre = dmpdirs.RESULTS / "{version}_treatmentResponseExperiment.RDS",
+    log:
+        dmpdirs.LOGS / "treatmentResponse" / "{version}/buildTreatmentResponseExperiment.log"
+    conda:
+        "envs/treatmentResponse.yaml"
+    script:
+        dmpdirs.SCRIPTS / "R" / "buildTreatmentResponseExperiment.R"

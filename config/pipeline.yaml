@@ -1,16 +1,16 @@
-name: DATASET_NAME                  # Name of the dataset, i.e GDSC, CCLE, CTRP, NCI60
+name: DATASET_NAME # Name of the dataset, i.e GDSC, CCLE, CTRP, NCI60
 description: The Genomics of Drug Sensitivity in Cancer (GDSC) is ...
-  This dataset contains molecular profiles for 1,000 cancer cell lines, 
-  and drug sensitivity data against a wide range of anti-cancer therapeutics.
+    This dataset contains molecular profiles for 1,000 cancer cell lines,
+    and drug sensitivity data against a wide range of anti-cancer therapeutics.
 url: https://www.cancerrxgene.org/
 
 metadata:
-    sampleMetadata: 
-      description:
-      url: https://cog.sanger.ac.uk/cancerrxgene/GDSC_release8.5/Cell_Lines_Details.xlsx
+    sampleMetadata:
+        description:
+        url: https://cog.sanger.ac.uk/cancerrxgene/GDSC_release8.5/Cell_Lines_Details.xlsx
     treatmentMetadata:
-      description:
-      url: https://cog.sanger.ac.uk/cancerrxgene/GDSC_release8.5/screened_compounds_rel_8.5.csv
+        description:
+        url: https://cog.sanger.ac.uk/cancerrxgene/GDSC_release8.5/screened_compounds_rel_8.5.csv
 
 # Configure Data URLs
 treatmentResponse:
@@ -29,3 +29,49 @@ treatmentResponse:
         profiles:
             description: The processed data for the GDSC2 release 8.5 is available from the GDSC website.
             url: https://cog.sanger.ac.uk/cancerrxgene/GDSC_release8.5/GDSC2_fitted_dose_response_27Oct23.xlsx
+    GDSC-squared:
+        # Note from jermiah:
+        # A while back, a pipeline for gdsc-square was started, and 4 urls are listed in the script:
+        # https://github.com/BHKLAB-DataProcessing/GDSC_squared-PSet-snakemake/blob/master/scripts/download_raw.R
+
+        # I believe the 'original_screen' is the raw data, and the 'matrix' and 'anchor' is the processed data.
+        original_screen:
+            description: |
+                download page: https://figshare.com/projects/Effective_drug_combinations_in_breast_colon_and_pancreatic_cancer_cells/117084
+            files:
+                - filename: "Original_screen_All_tissues_raw_data.csv.zip"
+                  url: "https://figshare.com/ndownloader/files/34010816"
+                - filename: "Original_screen_All_tissues_day1_data.csv.zip"
+                  url: "https://figshare.com/ndownloader/files/34010822"
+                - filename: "Validation_screen_All_tissues_raw_data.csv.zip"
+                  url: "https://figshare.com/ndownloader/files/34010828"
+                - filename: "Validation_screen_All_tissues_day1_data.csv.zip"
+                  url: "https://figshare.com/ndownloader/files/34010831"
+        matrix:
+            description: |
+                download page: https://gdsc-combinations.depmap.sanger.ac.uk/downloads
+                As of writing, there are 5 'matrix' datasets GDSC_{007,008,009,010} and Sandpiper-01.
+                Documentation and glossary PDFs are saved in this repo's 'resources' folder.
+            files:
+                - filename: "gdsc-007_matrix_results.csv.gz"
+                  url:  "https://gdsc-combinations.depmap.sanger.ac.uk/downloads/gdsc-007/matrix_results"
+                - filename: "gdsc-008_matrix_results.csv.gz"
+                  url:  "https://gdsc-combinations.depmap.sanger.ac.uk/downloads/gdsc-008/matrix_results"
+                - filename: "gdsc-009_matrix_results.csv.gz"
+                  url:  "https://gdsc-combinations.depmap.sanger.ac.uk/downloads/gdsc-009/matrix_results"
+                - filename: "gdsc-010_matrix_results.csv.gz"
+                  url:  "https://gdsc-combinations.depmap.sanger.ac.uk/downloads/gdsc-010/matrix_results"
+                - filename: "sandpiper-01_matrix_results.csv.gz"
+                  url:  "https://gdsc-combinations.depmap.sanger.ac.uk/downloads/sandpiper-01/matrix_results"
+        anchor:
+            description: |
+                download page: https://gdsc-combinations.depmap.sanger.ac.uk/downloads
+                There are 3 'processed anchor' datasets: Breast, Colon, and Pancreas.
+                Documentation and glossary PDFs are saved in this repo's 'resources' folder.
+            files:
+                - filename: "breast_anchor_combo.csv.gz"
+                  url:  "https://gdsc-combinations.depmap.sanger.ac.uk/downloads/breast/anchor_combo"
+                - filename: "colon_anchor_combo.csv.gz"
+                  url:  "https://gdsc-combinations.depmap.sanger.ac.uk/downloads/colon/anchor_combo"
+                - filename: "pancreas_anchor_combo.csv.gz"
+                  url: "https://gdsc-combinations.depmap.sanger.ac.uk/downloads/pancreas/anchor_combo"
