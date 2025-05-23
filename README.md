@@ -18,6 +18,16 @@
 ![GitHub contributors](https://img.shields.io/github/contributors/BHKLAB-DataProcessing/gdsc-treatmentresponse-snakemake?style=flat-square)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/BHKLAB-DataProcessing/gdsc-treatmentresponse-snakemake?style=flat-square)
 
+## 📦 Download
+
+You can download the latest processed treatmentResponseExperiment here:
+
+➡️ [Download RDS File](https://github.com/BHKLAB-DataProcessing/gdsc-treatmentresponse-snakemake/releases/latest/download/)
+
+> [!NOTE]
+> If the file does not exist yet, look through the [releases](https://github.com/BHKLAB-DataProcessing/gdsc-treatmentresponse-snakemake/releases) to find a release that contains the file.
+
+
 ## Set Up
 
 ### Prerequisites
