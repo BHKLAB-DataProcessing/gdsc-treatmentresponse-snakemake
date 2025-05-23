@@ -104,6 +104,6 @@ show(tre)
 ###############################################################################
 message("Saving the treatment response experiment object...")
 saveRDS(
-    tre_fit,
+    tre,
     file = OUTPUT$tre
 )
