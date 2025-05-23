@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/BHKLAB-DataProcessing/gdsc-treatmentresponse-snakemake/compare/v0.2.1...v0.3.0) (2025-05-23)
+
+
+### Features
+
+* include download links ([8635e46](https://github.com/BHKLAB-DataProcessing/gdsc-treatmentresponse-snakemake/commit/8635e465377289674b3837f2a2b6a13a7a857e56))
+
 ## [0.2.1](https://github.com/BHKLAB-DataProcessing/gdsc-treatmentresponse-snakemake/compare/v0.2.0...v0.2.1) (2025-05-23)
 
 
