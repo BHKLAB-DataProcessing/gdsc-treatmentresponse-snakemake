@@ -79,8 +79,6 @@ rule buildTreatmentResponseExperiment:
         dmpdirs.LOGS / "treatmentResponse/{version}/buildTreatmentResponseExperiment.log"
     conda:
         "envs/treatmentResponse.yaml"
-    threads:
-        10
     script:
         dmpdirs.SCRIPTS / "R" / "buildTreatmentResponseExperiment.R"
 
